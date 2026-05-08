@@ -1,6 +1,6 @@
 var panel = new Panel();
 panel.location = "bottom";
-panel.height = 76;
+panel.height = 86;
 
 // --- AJUSTE DE CONTENIDO ---
 panel.lengthMode = 1; // FitContent
