@@ -1,8 +1,10 @@
 /*
- *    SPDX-FileCopyrightText: 2017 Kai Uwe Broulik <kde@privat.broulik.de>
- *
- *    SPDX-License-Identifier: GPL-2.0-or-later
+ S PDX-FileCopyrightText:* 2017 Kai Uwe Broulik <kde@privat.broulik.de>
+
+ SPDX-License-Identifier: GPL-2.0-or-later
  */
+
+pragma ComponentBehavior: Bound
 
 import QtQuick
 
