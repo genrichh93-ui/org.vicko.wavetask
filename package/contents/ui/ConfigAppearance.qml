@@ -47,6 +47,7 @@ KCMUtils.SimpleKCM {
     property alias cfg_showReflection: showReflection.checked
 
     property alias cfg_cairoPenguinEnabled: cairoPenguinEnabled.checked
+    property alias cfg_showAppGridLauncher: showAppGridLauncher.checked
 
     Component.onCompleted: {
         /* Don't rely on bindings for checking the radiobuttons
@@ -354,6 +355,12 @@ KCMUtils.SimpleKCM {
             id: cairoPenguinEnabled
             Kirigami.FormData.label: "Show Cairo Penguin:"
             checked: Plasmoid.configuration.cairoPenguinEnabled
+        }
+
+        QQC2.CheckBox {
+            id: showAppGridLauncher
+            Kirigami.FormData.label: "AppGrid Launcher anzeigen:"
+            checked: Plasmoid.configuration.showAppGridLauncher
         }
     }
 }

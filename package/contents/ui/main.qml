@@ -20,6 +20,7 @@ import org.kde.plasma.workspace.trianglemousefilter
 import org.kde.taskmanager as TaskManager
 import org.vicko.wavetask as TaskManagerApplet
 import org.kde.plasma.workspace.dbus as DBus
+import org.kde.plasma.private.kicker as Kicker
 
 import "code/LayoutMetrics.js" as LayoutMetrics
 import "code/TaskTools.js" as TaskTools
@@ -42,6 +43,14 @@ PlasmoidItem {
 
     readonly property Component contextMenuComponent: Qt.createComponent("ContextMenu.qml")
     readonly property Component pulseAudioComponent: Qt.createComponent("PulseAudio.qml")
+
+    Kicker.KAStatsFavoritesModel {
+        id: sharedFavoritesModel
+        maxFavorites: -1
+        Component.onCompleted: {
+            initForClient("org.vicko.wavetask.favorites.instance-" + Plasmoid.id);
+        }
+    }
 
     property alias taskList: taskList
     property alias taskRepeater: taskRepeater
@@ -777,11 +786,11 @@ PlasmoidItem {
                 readonly property real _baseSize: Plasmoid.configuration.iconSize
                 readonly property real _sigma: _baseSize * Plasmoid.configuration.amplitud
 
-                readonly property real totalWidth: tasks.taskRepeater.count * _baseSize
+                readonly property real totalWidth: (tasks.taskRepeater.count + (Plasmoid.configuration.showAppGridLauncher ? 1 : 0)) * _baseSize
 
                 readonly property real _zoom: (Plasmoid.configuration.magnification || 0) / 100
                 readonly property real maxZoom: 1.0 + (Plasmoid.configuration.magnification || 0) / 100
-                readonly property real baseContentWidth: taskRepeater.count * Plasmoid.configuration.iconSize + Math.max(0, taskRepeater.count - 1) * spacing
+                readonly property real baseContentWidth: (taskRepeater.count + (Plasmoid.configuration.showAppGridLauncher ? 1 : 0)) * Plasmoid.configuration.iconSize + Math.max(0, (taskRepeater.count + (Plasmoid.configuration.showAppGridLauncher ? 1 : 0)) - 1) * spacing
 
                 // Gaussian integral
                 readonly property real zoomExtraWidth: _zoom * _sigma * Math.sqrt(2 * Math.PI)
@@ -793,11 +802,14 @@ PlasmoidItem {
                 // 2. Calculamos el ancho real de todos los iconos sumados
                 readonly property real iconsTotalWidth: {
                     let total = 0;
+                    if (Plasmoid.configuration.showAppGridLauncher && typeof launchpadItem !== "undefined" && launchpadItem !== null) {
+                        total += launchpadItem.width;
+                    }
                     for (let i = 0; i < taskRepeater.count; ++i) {
                         let item = taskRepeater.itemAt(i);
                         if (item) {
                             total += item.width;
-                            if (i > 0) total += spacing;
+                            if (i > 0 || Plasmoid.configuration.showAppGridLauncher) total += spacing;
                         }
                     }
                     return total;
@@ -857,6 +869,14 @@ PlasmoidItem {
                     }
                 }
 
+                LaunchpadButton {
+                    id: launchpadItem
+                    tasksRoot: tasks
+                    dockRef: taskList
+                    visible: Plasmoid.configuration.showAppGridLauncher
+                    x: taskList.centerOffset
+                }
+
                 Repeater {
                     id: taskRepeater
                     model: tasksModel
@@ -868,6 +888,9 @@ PlasmoidItem {
 
                         x: {
                             let posX = taskList.centerOffset;
+                            if (Plasmoid.configuration.showAppGridLauncher && typeof launchpadItem !== "undefined" && launchpadItem !== null) {
+                                posX += launchpadItem.width + taskList.spacing;
+                            }
                             for (let i = 0; i < index; ++i) {
                                 let previousItem = taskRepeater.itemAt(i);
                                 let w = previousItem ? previousItem.width : Plasmoid.configuration.iconSize;
@@ -944,6 +967,7 @@ PlasmoidItem {
             modelIndex,
             mpris2Source,
             backend,
+            sharedFavoritesModel,
         });
         return contextMenuComponent.createObject(rootTask, initialArgs);
     }
@@ -961,6 +985,9 @@ PlasmoidItem {
     }
 
     Component.onCompleted: {
+        if (contextMenuComponent.status === Component.Error) {
+            console.error("Wavetask ContextMenu error:", contextMenuComponent.errorString());
+        }
         TaskTools.taskManagerInstanceCount += 1;
         requestLayout.connect(iconGeometryTimer.restart);
         applyBackgroundHint();

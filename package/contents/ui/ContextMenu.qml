@@ -16,6 +16,7 @@ import org.kde.plasma.extras as PlasmaExtras
 
 import org.kde.taskmanager as TaskManager
 import org.kde.plasma.private.mpris as Mpris
+import org.kde.plasma.private.kicker as Kicker
 import org.vicko.wavetask as TaskManagerApplet
 
 import "code/LayoutMetrics.js" as LayoutMetrics
@@ -26,8 +27,70 @@ PlasmaExtras.Menu {
     required property TaskManagerApplet.Backend backend
     required property Mpris.Mpris2Model mpris2Source
     required property /*QModelIndex*/var modelIndex
+    required property var sharedFavoritesModel
 
     readonly property var atm: TaskManager.AbstractTasksModel
+
+    function getFavoriteId(urlStr) {
+        if (!urlStr) return "";
+        let s = urlStr.toString();
+        if (s.indexOf("applications:") === 0) {
+            return s;
+        }
+        if (s.indexOf("file://") === 0) {
+            let parts = s.split('/');
+            let filename = parts[parts.length - 1];
+            if (filename.indexOf(".desktop") !== -1) {
+                return "applications:" + filename;
+            }
+        }
+        if (s.indexOf("/") === -1 && s.indexOf(".desktop") !== -1) {
+            return "applications:" + s;
+        }
+        return s;
+    }
+
+    function getCurrentFavoriteId() {
+        if (!visualParent || !modelIndex) return "";
+        try {
+            let url = get(TaskManager.AbstractTasksModel.LauncherUrlWithoutIcon);
+            return url ? getFavoriteId(url) : "";
+        } catch (e) {
+            return "";
+        }
+    }
+
+    function getAppGridApplet() {
+        if (!Plasmoid || !Plasmoid.containment) return null;
+        if (Plasmoid.containment.applets) {
+            let applets = Plasmoid.containment.applets;
+            for (let j = 0; j < applets.length; ++j) {
+                let applet = applets[j];
+                if (applet && 
+                    (applet.pluginName === "dev.xarbit.appgrid" || 
+                     applet.pluginName === "dev.xarbit.appgrid.panel")) {
+                    return applet;
+                }
+            }
+        }
+        if (Plasmoid.containment.corona && Plasmoid.containment.corona.containments) {
+            let containments = Plasmoid.containment.corona.containments;
+            for (let i = 0; i < containments.length; ++i) {
+                let applets = containments[i].applets;
+                if (applets) {
+                    for (let j = 0; j < applets.length; ++j) {
+                        let applet = applets[j];
+                        if (applet && 
+                            (applet.pluginName === "dev.xarbit.appgrid" || 
+                             applet.pluginName === "dev.xarbit.appgrid.panel")) {
+                            return applet;
+                        }
+                    }
+                }
+            }
+        }
+        return null;
+    }
 
     property bool showAllPlaces: false
 
@@ -600,6 +663,29 @@ PlasmaExtras.Menu {
 
         onClicked: {
             tasksModel.requestRemoveLauncher(menu.get(TaskManager.AbstractTasksModel.LauncherUrlWithoutIcon));
+        }
+    }
+
+    PlasmaExtras.MenuItem {
+        id: favoritesToggleAction
+
+        property string favoriteId: menu.getCurrentFavoriteId()
+        
+        visible: menu.visualParent && favoriteId !== "" && sharedFavoritesModel.enabled
+
+        text: sharedFavoritesModel.isFavorite(favoriteId)
+            ? i18nc("action:inmenu", "Aus Favoriten entfernen")
+            : i18nc("action:inmenu", "Zu Favoriten hinzufügen")
+        icon: sharedFavoritesModel.isFavorite(favoriteId)
+            ? "bookmark-remove"
+            : "bookmark-new"
+
+        onClicked: {
+            if (sharedFavoritesModel.isFavorite(favoriteId)) {
+                sharedFavoritesModel.removeFavorite(favoriteId)
+            } else {
+                sharedFavoritesModel.addFavorite(favoriteId)
+            }
         }
     }
 

@@ -173,6 +173,10 @@
     <entry name="cairoPenguinEnabled" type="Bool">
       <default>false</default>
     </entry>
+    <entry name="showAppGridLauncher" type="Bool">
+      <label>Show AppGrid (Launchpad) launcher on the left side of the dock</label>
+      <default>true</default>
+    </entry>
   </group>
 
 </kcfg>
