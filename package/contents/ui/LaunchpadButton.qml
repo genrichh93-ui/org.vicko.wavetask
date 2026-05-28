@@ -129,6 +129,15 @@ Item {
     TapHandler {
         acceptedButtons: Qt.LeftButton
         onTapped: {
+            triggerTimer.start();
+        }
+    }
+
+    Timer {
+        id: triggerTimer
+        interval: 100
+        repeat: false
+        onTriggered: {
             triggerAppGrid();
         }
     }
