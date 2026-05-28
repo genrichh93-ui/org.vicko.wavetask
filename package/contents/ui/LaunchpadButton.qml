@@ -193,7 +193,8 @@ Item {
             text: i18n("WaveTask konfigurieren…")
             icon: "configure"
             onClicked: {
-                Plasmoid.action("configure").trigger();
+                let act = Plasmoid.internalAction("configure");
+                if (act) act.trigger();
             }
         }
     }
@@ -219,6 +220,15 @@ Item {
                 } else {
                     // Fallback to setting expanded property
                     appGridApplet.expanded = !appGridApplet.expanded;
+                }
+
+                // Force WaveTask to release any panel popup lock
+                Plasmoid.expanded = false;
+
+                // Force the dock out of hover state immediately
+                if (dockRef) {
+                    dockRef.insideDock = false;
+                    dockRef.smoothMouseX = -1;
                 }
             } catch (e) {
                 console.error("Wavetask: Failed to trigger AppGrid applet", e);
